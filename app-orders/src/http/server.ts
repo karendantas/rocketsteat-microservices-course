@@ -1,3 +1,5 @@
+import "@opentelemetry/auto-instrumentations-node/register";
+
 import { fastify } from "fastify";
 import { fastifyCors } from "@fastify/cors";
 import { z } from "zod";
@@ -6,7 +8,6 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
-import { channels } from "../broker/channels/index.ts";
 import { db } from "../db/client.ts";
 import { schema } from "../db/schema/index.ts";
 import { randomUUID } from "node:crypto";
@@ -35,18 +36,19 @@ app.post(
     console.log("Create an order with amount:", amount);
 
     const orderId = randomUUID();
+
+    await db.insert(schema.orders).values({
+      id: orderId,
+      customerId: "1",
+      amount,
+    });
+
     dispatchOrderCreated({
       orderId,
       amount,
       customer: {
         id: "1",
       },
-    });
-
-    await db.insert(schema.orders).values({
-      id: orderId,
-      customerId: "1",
-      amount,
     });
     return reply.status(201).send();
   }
